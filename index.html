@@ -1,0 +1,143 @@
+<!DOCTYPE html>
+<html lang="es">
+<head>
+<meta charset="UTF-8">
+<meta name="viewport" content="width=device-width, initial-scale=1.0">
+<title>FaFiles — Transporta tus archivos de un lado a otro así de FAcil</title>
+<meta name="description" content="Sube un archivo o un link, recibe un código de 8 dígitos, expira en una hora.">
+<link rel="icon" href="data:image/svg+xml,<svg xmlns=%22http://www.w3.org/2000/svg%22 viewBox=%220 0 100 100%22><text y=%22.9em%22 font-size=%2290%22>🔐</text></svg>">
+<link rel="preconnect" href="https://fonts.googleapis.com">
+<link href="https://fonts.googleapis.com/css2?family=Barlow+Condensed:wght@600;700;800&family=Inter:wght@400;500;600&family=JetBrains+Mono:wght@400;500;700&display=swap" rel="stylesheet">
+<link rel="stylesheet" href="style.css">
+</head>
+<body>
+
+<div class="grain"></div>
+
+<header class="topbar">
+  <div class="brand">
+    <span class="brand-mark">FA</span>
+    <span class="brand-name">FaFiles</span>
+  </div>
+  <div class="topbar-note">se autodestruye en <strong>60 min</strong></div>
+</header>
+
+<main class="stage">
+
+  <section class="hero">
+    <h1>Guárdalo. <span class="accent">Compártelo.</span> Todo al instante.</h1>
+    <p class="hero-sub">Sube un archivo, un link o una nota. Te damos un código de 8 dígitos como el de un casillero. Sin código no entra nadie. Pasada una hora, no queda nada.</p>
+  </section>
+
+  <section class="ticket-wrap">
+
+    <div class="tabs" role="tablist">
+      <button class="tab is-active" data-tab="lock" role="tab" aria-selected="true">Exportar</button>
+      <button class="tab" data-tab="unlock" role="tab" aria-selected="false">Ingresar</button>
+    </div>
+
+    <div class="ticket">
+
+      <!-- LOCK PANEL -->
+      <div class="panel is-active" id="panel-lock">
+
+        <div class="dropzone" id="dropzone">
+          <input type="file" id="fileInput" hidden multiple>
+          <div class="dropzone-inner">
+            <span class="dz-icon">＋</span>
+            <p class="dz-title">Suelta archivos aquí o toca para elegir</p>
+            <p class="dz-sub">ppt, xlsx, docs, csv, zip, rar, pdf, imágenes... lo que sea</p>
+          </div>
+        </div>
+
+        <ul class="file-list" id="fileList"></ul>
+
+        <div class="field">
+          <label for="linkInput">Link (opcional)</label>
+          <input type="url" id="linkInput" placeholder="https://...">
+        </div>
+
+        <div class="field">
+          <label for="noteInput">Nota o comentario (opcional)</label>
+          <textarea id="noteInput" rows="2" placeholder="Contexto para quien abra el casillero"></textarea>
+        </div>
+
+        <button class="btn-primary" id="lockBtn">
+          <span>Exportar</span>
+        </button>
+
+        <p class="hint" id="lockHint"></p>
+
+        <!-- RESULT -->
+        <div class="stub" id="stubResult" hidden>
+          <div class="stub-top">
+            <span>FaFiles · claim ticket</span>
+            <span id="stubExpiry">expira 00:00</span>
+          </div>
+          <div class="stub-code" id="stubCode">00000000</div>
+          <div class="stub-actions">
+            <button class="btn-ghost" id="copyCodeBtn">Copiar código</button>
+            <button class="btn-ghost" id="newLockBtn">Exportar otro</button>
+          </div>
+          <p class="stub-warning">Guarda este código ya. No se vuelve a mostrar.</p>
+        </div>
+
+      </div>
+
+      <!-- UNLOCK PANEL -->
+      <div class="panel" id="panel-unlock">
+
+        <div class="field code-field">
+          <label for="codeInput">Código de 8 dígitos</label>
+          <input type="text" id="codeInput" inputmode="numeric" maxlength="8" placeholder="00000000" autocomplete="off">
+        </div>
+
+        <button class="btn-primary" id="unlockBtn">
+          <span>Abrir casillero</span>
+        </button>
+
+        <p class="hint" id="unlockHint"></p>
+
+        <div class="vault" id="vaultResult" hidden>
+          <div class="vault-header">
+            <span id="vaultExpiry">se borra en 00:00</span>
+          </div>
+          <div id="vaultNote" class="vault-note" hidden></div>
+          <div id="vaultLink" class="vault-link" hidden></div>
+          <ul class="vault-files" id="vaultFiles"></ul>
+        </div>
+
+      </div>
+
+    </div>
+  </section>
+
+  <section class="how">
+    <div class="how-item">
+      <span class="how-num">01</span>
+      <p>Subes lo que sea: archivos, un link, una nota. Todo junto o por separado.</p>
+    </div>
+    <div class="how-item">
+      <span class="how-num">02</span>
+      <p>Recibes un código de 8 dígitos. Ese código es la única llave que existe.</p>
+    </div>
+    <div class="how-item">
+      <span class="how-num">03</span>
+      <p>Comparte el código por donde quieras. Sin cuentas, sin links públicos.</p>
+    </div>
+    <div class="how-item">
+      <span class="how-num">04</span>
+      <p>A la hora justa, el casillero y su contenido se eliminan para siempre.</p>
+    </div>
+  </section>
+
+</main>
+
+<footer class="foot">
+  <span>FaFiles</span>
+  <span>Nada queda más de 60 minutos.</span>
+</footer>
+
+<script src="script.js"></script>
+</body>
+</html>
