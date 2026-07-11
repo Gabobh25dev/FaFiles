@@ -4,6 +4,14 @@ import { del } from '@vercel/blob';
 // Se ejecuta periódicamente (ver vercel.json) y borra del Blob Storage
 // los archivos cuyo código de casillero ya venció.
 export default async function handler(req, res) {
+  // Protección: solo Vercel Cron o quien tenga el secreto puede ejecutar la limpieza.
+  const authHeader = req.headers['authorization'];
+  const isVercelCron = authHeader === `Bearer ${process.env.CRON_SECRET}`;
+  const isExternalCron = req.query.secret === process.env.CRON_SECRET;
+  if (process.env.CRON_SECRET && !isVercelCron && !isExternalCron) {
+    return res.status(401).json({ error: 'No autorizado.' });
+  }
+
   try {
     const now = Date.now();
     const dueCodes = await kv.zrange('fafiles:cleanup-queue', 0, now, { byScore: true });
