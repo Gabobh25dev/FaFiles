@@ -18,7 +18,15 @@ export default async function handler(req, res) {
     }
 
     const payload = typeof raw === 'string' ? JSON.parse(raw) : raw;
-    return res.status(200).json(payload);
+
+    // Convierte cada archivo en un link de descarga que pasa por nuestra propia
+    // función (que vuelve a exigir el código), en vez de exponer la URL del blob.
+    const filesWithDownloadUrl = (payload.files || []).map(f => ({
+      name: f.name,
+      url: `/api/download?code=${code}&pathname=${encodeURIComponent(f.pathname)}`,
+    }));
+
+    return res.status(200).json({ ...payload, files: filesWithDownloadUrl });
   } catch (err) {
     console.error(err);
     return res.status(500).json({ error: 'Error al abrir el casillero.' });

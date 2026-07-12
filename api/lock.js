@@ -49,10 +49,10 @@ export default async function handler(req, res) {
       if (!f || !f.filepath) continue;
       const buffer = fs.readFileSync(f.filepath);
       const blob = await put(`fafiles/${code}/${Date.now()}-${f.originalFilename}`, buffer, {
-        access: 'public',
+        access: 'private',
         contentType: f.mimetype || 'application/octet-stream',
       });
-      uploaded.push({ name: f.originalFilename, url: blob.url, pathname: blob.pathname });
+      uploaded.push({ name: f.originalFilename, pathname: blob.pathname });
     }
 
     const expiresAt = new Date(Date.now() + TTL_SECONDS * 1000).toISOString();
