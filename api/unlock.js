@@ -1,8 +1,14 @@
 import { kv } from '@vercel/kv';
+import { checkRateLimit } from './_ratelimit.js';
 
 export default async function handler(req, res) {
   if (req.method !== 'GET') {
     return res.status(405).json({ error: 'Método no permitido.' });
+  }
+
+  const { allowed } = await checkRateLimit(req, 'unlock', 20, 600);
+  if (!allowed) {
+    return res.status(429).json({ error: 'Demasiados intentos. Espera unos minutos y vuelve a intentar.' });
   }
 
   const code = String(req.query.code || '').trim();

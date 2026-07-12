@@ -1,3 +1,6 @@
+// ---------- Cliente de Vercel Blob (subida directa navegador -> Blob) ----------
+import { upload } from 'https://esm.sh/@vercel/blob@2.6.1/client';
+
 // ---------- Tabs ----------
 const tabs = document.querySelectorAll('.tab');
 const panels = { lock: document.getElementById('panel-lock'), unlock: document.getElementById('panel-unlock') };
@@ -61,6 +64,15 @@ function escapeHtml(str) {
   return div.innerHTML;
 }
 
+function isSafeUrl(url) {
+  try {
+    const parsed = new URL(url, window.location.origin);
+    return parsed.protocol === 'http:' || parsed.protocol === 'https:';
+  } catch {
+    return false;
+  }
+}
+
 lockBtn.addEventListener('click', async () => {
   const link = linkInput.value.trim();
   const note = noteInput.value.trim();
@@ -71,23 +83,37 @@ lockBtn.addEventListener('click', async () => {
   }
 
   lockBtn.disabled = true;
-  setHint(lockHint, 'Cerrando casillero…', '');
-
-  const formData = new FormData();
-  selectedFiles.forEach(f => formData.append('files', f));
-  if (link) formData.append('link', link);
-  if (note) formData.append('note', note);
 
   try {
-    const res = await fetch('/api/lock', { method: 'POST', body: formData });
-    const data = await res.json();
-    if (!res.ok) throw new Error(data.error || 'No se pudo cerrar el casillero.');
+    // 1. Crear el casillero (código + metadata), todavía sin archivos.
+    setHint(lockHint, 'Reservando casillero…', '');
+    const initRes = await fetch('/api/init', {
+      method: 'POST',
+      headers: { 'Content-Type': 'application/json' },
+      body: JSON.stringify({ note, link }),
+    });
+    const initData = await initRes.json();
+    if (!initRes.ok) throw new Error(initData.error || 'No se pudo crear el casillero.');
 
-    stubCode.textContent = data.code;
-    stubExpiry.textContent = 'expira ' + formatExpiry(data.expiresAt);
+    const { code, expiresAt } = initData;
+
+    // 2. Subir cada archivo DIRECTO al Blob Storage (no pasa por nuestra función),
+    // uno por uno para evitar condiciones de carrera al registrar la lista.
+    for (let i = 0; i < selectedFiles.length; i++) {
+      const file = selectedFiles[i];
+      setHint(lockHint, `Subiendo ${i + 1} de ${selectedFiles.length}: ${file.name}…`, '');
+
+      await upload(`fafiles/${code}/${Date.now()}-${file.name}`, file, {
+        access: 'private',
+        handleUploadUrl: '/api/blob-upload',
+        clientPayload: JSON.stringify({ code, name: file.name }),
+      });
+    }
+
+    stubCode.textContent = code;
+    stubExpiry.textContent = 'expira ' + formatExpiry(expiresAt);
     stubResult.hidden = false;
     setHint(lockHint, '', '');
-    lockBtn.parentElement.querySelector('.dropzone')?.scrollIntoView({ behavior: 'smooth', block: 'center' });
   } catch (err) {
     setHint(lockHint, err.message, 'error');
   } finally {
@@ -153,15 +179,37 @@ unlockBtn.addEventListener('click', async () => {
     vaultExpiry.textContent = 'se borra a las ' + formatExpiry(data.expiresAt);
 
     if (data.note) { vaultNote.textContent = data.note; vaultNote.hidden = false; } else { vaultNote.hidden = true; }
-    if (data.link) {
-      vaultLink.innerHTML = `<a href="${data.link}" target="_blank" rel="noopener">${escapeHtml(data.link)}</a>`;
+
+    vaultLink.innerHTML = '';
+    if (data.link && isSafeUrl(data.link)) {
+      const a = document.createElement('a');
+      a.href = data.link;
+      a.target = '_blank';
+      a.rel = 'noopener noreferrer';
+      a.textContent = data.link;
+      vaultLink.appendChild(a);
       vaultLink.hidden = false;
-    } else { vaultLink.hidden = true; }
+    } else if (data.link) {
+      // Link presente pero con esquema no permitido (ej. javascript:) — se muestra como texto plano, no como link clickeable.
+      vaultLink.textContent = data.link;
+      vaultLink.hidden = false;
+    } else {
+      vaultLink.hidden = true;
+    }
 
     vaultFiles.innerHTML = '';
     (data.files || []).forEach(f => {
       const li = document.createElement('li');
-      li.innerHTML = `<a href="${f.url}" download="${escapeHtml(f.name)}"><span>${escapeHtml(f.name)}</span><span>descargar ↓</span></a>`;
+      const a = document.createElement('a');
+      a.href = f.url;
+      a.setAttribute('download', f.name);
+      const nameSpan = document.createElement('span');
+      nameSpan.textContent = f.name;
+      const dlSpan = document.createElement('span');
+      dlSpan.textContent = 'descargar ↓';
+      a.appendChild(nameSpan);
+      a.appendChild(dlSpan);
+      li.appendChild(a);
       vaultFiles.appendChild(li);
     });
 
